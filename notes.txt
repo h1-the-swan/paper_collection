@@ -1,0 +1,1 @@
+first goal: given a collection of papers, output it to json file in a way that will work for timeline visualization
