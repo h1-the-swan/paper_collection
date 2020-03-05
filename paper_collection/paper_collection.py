@@ -16,6 +16,8 @@ import logging
 root_logger = logging.getLogger()
 logger = root_logger.getChild(__name__)
 
+import math
+
 class Paper:
 
     """A single article, from a single data set."""
@@ -30,6 +32,8 @@ class Paper:
                  url=None,
                  pub_date=None,
                  year=None,
+                 venue=None,
+                 authors=None,
                  node_rank=None):
         """TODO: to be defined1. """
 
@@ -42,10 +46,8 @@ class Paper:
         self.url = url
         self.pub_date = pub_date
         self.year = year
+        self.venue = venue
         self.node_rank = node_rank
-
-        self.authors = []
-        self.venue = None
 
         if (not self.display_title) and (self.title):
             self.display_title = self.title.title()
@@ -53,8 +55,63 @@ class Paper:
         if (not self.url) and (self.doi):
             self.url = "https://doi.org/{}".format(self.doi)
 
+        self.load_authors(authors)
+
     def __repr__(self):
         return "Paper(paper_id: {})".format(self.paper_id)
+
+    def to_dict(self):
+        """return a dictionary of attributes suitable for JSON output
+        :returns: dictionary
+
+        """
+        string_fields = [
+            'dataset',
+            'dataset_version',
+            'title',
+            'display_title',
+            'doi',
+            'url',
+            'pub_date',
+            'venue',
+            'display_authors'
+        ]
+
+        num_fields = [
+            'year',
+            'node_rank'
+        ]
+        out = dict()
+        for f in string_fields:
+            attr = getattr(self, f)
+            if not attr or (attr != attr):  # invalid value, probably NaN
+                attr = None  # default for missing data
+            out[f] = attr
+        for f in num_fields:
+            attr = getattr(self, f)
+            if (attr != attr):  # invalid value, probably NaN
+                attr = None  # default for missing data
+            out[f] = attr
+        return out
+
+    def load_authors(self, authors):
+        """load author data
+
+        :authors: list of dicts (with keys e.g., 'name', author_id')
+
+        """
+        self.authors = authors
+        if not self.authors:
+            self.authors = []
+        self.display_authors = self.get_display_authors()
+
+    def get_display_authors(self):
+        """Get a string representation for the authors of this paper
+        """
+        if not self.authors:
+            return None
+        names = [a['name'] for a in self.authors]
+        return ", ".join(names)
 
 class PaperCollection:
 
@@ -91,14 +148,15 @@ class PaperCollection:
         G = nx.DiGraph()
 
         for paper in self.papers:
-            G.add_node(str(paper.paper_id),
-                       title=paper.title,
-                       display_title=paper.display_title,
-                       doi=paper.doi,
-                       url=paper.url,
-                       pub_date=str(paper.pub_date),
-                       year=str(paper.year),
-                       node_rank=paper.node_rank)
+            # G.add_node(str(paper.paper_id),
+            #            title=paper.title,
+            #            display_title=paper.display_title,
+            #            doi=paper.doi,
+            #            url=paper.url,
+            #            pub_date=str(paper.pub_date),
+            #            year=str(paper.year),
+            #            node_rank=paper.node_rank)
+            G.add_node(str(paper.paper_id), **paper.to_dict())
 
         for citing, cited in self.citations:
             G.add_edge(str(citing), str(cited))
