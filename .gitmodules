@@ -1,3 +1,6 @@
 [submodule "submodules/d3-article-timeline"]
 	path = submodules/d3-article-timeline
 	url = git@github.com:h1-the-swan/d3-article-timeline.git
+[submodule "submodules/nodelink_vis_coauthorship"]
+	path = submodules/nodelink_vis_coauthorship
+	url = git@github.com:h1-the-swan/nodelink_vis_coauthorship.git
