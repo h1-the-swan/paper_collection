@@ -2,7 +2,7 @@
 
 DESCRIPTION = """main module"""
 
-import sys, os, time
+import sys, os, time, json
 from pathlib import Path
 from datetime import datetime
 from timeit import default_timer as timer
@@ -29,7 +29,8 @@ class Paper:
                  doi=None,
                  url=None,
                  pub_date=None,
-                 year=None):
+                 year=None,
+                 node_rank=None):
         """TODO: to be defined1. """
 
         self.dataset = dataset
@@ -41,6 +42,7 @@ class Paper:
         self.url = url
         self.pub_date = pub_date
         self.year = year
+        self.node_rank = node_rank
 
         self.authors = []
         self.venue = None
@@ -82,28 +84,41 @@ class PaperCollection:
     def __len__(self):
         return len(self.papers)
 
-        
-        
+    def construct_graph(self):
+        """Construct a graph with papers and citations
+        """
+        import networkx as nx
+        G = nx.DiGraph()
 
-# def main(args):
-#     pass
-#
-# if __name__ == "__main__":
-#     total_start = timer()
-#     handler = logging.StreamHandler()
-#     handler.setFormatter(logging.Formatter(fmt="%(asctime)s %(name)s.%(lineno)d %(levelname)s : %(message)s", datefmt="%H:%M:%S"))
-#     root_logger.addHandler(handler)
-#     root_logger.setLevel(logging.INFO)
-#     logger.info(" ".join(sys.argv))
-#     logger.info( '{:%Y-%m-%d %H:%M:%S}'.format(datetime.now()) )
-#     import argparse
-#     parser = argparse.ArgumentParser(description=DESCRIPTION)
-#     parser.add_argument("--debug", action='store_true', help="output debugging info")
-#     global args
-#     args = parser.parse_args()
-#     if args.debug:
-#         root_logger.setLevel(logging.DEBUG)
-#         logger.debug('debug mode is on')
-#     main(args)
-#     total_end = timer()
-#     logger.info('all finished. total time: {}'.format(format_timespan(total_end-total_start)))
+        for paper in self.papers:
+            G.add_node(str(paper.paper_id),
+                       title=paper.title,
+                       display_title=paper.display_title,
+                       doi=paper.doi,
+                       url=paper.url,
+                       pub_date=str(paper.pub_date),
+                       year=str(paper.year),
+                       node_rank=paper.node_rank)
+
+        for citing, cited in self.citations:
+            G.add_edge(str(citing), str(cited))
+
+        self.G = G
+
+        return G
+
+    def write_graph(self, outfpath):
+        """Write graph to json
+
+        outfpath: output path (json)
+
+        """
+        from networkx.readwrite import json_graph
+        if self.G is None:
+            self.construct_graph()
+        outfpath = Path(outfpath)
+        logger.debug("writing to {}".format(outfpath))
+        json_data = json_graph.node_link_data(self.G)
+        with outfpath.open('w') as outf:
+            json.dump(json_data, outf)
+
