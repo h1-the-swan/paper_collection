@@ -86,7 +86,7 @@ class Paper:
             attr = getattr(self, f)
             if not attr or (attr != attr):  # invalid value, probably NaN
                 attr = None  # default for missing data
-            out[f] = attr
+            out[f] = str(attr)
         for f in num_fields:
             attr = getattr(self, f)
             if (attr != attr):  # invalid value, probably NaN
